@@ -1,4 +1,5 @@
 /* ====== GLOBAL STYLES ====== */
+@import 'tailwindcss';
 :root {
   --bg-color: #f9fafb;
   --card-bg: #ffffff;
@@ -70,4 +71,26 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+.scrollhidden::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollhidden::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollhidden::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.4); 
+  border-radius: 10px;
+}
+
+.scrollhidden::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.7);
+}
+
+
+.scrollhidden {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
 }
