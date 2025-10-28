@@ -1,15 +1,30 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from './auth/AuthContext';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
   const handleStudentClick = () => {
-    navigate('/student');
+    if (isAuthenticated && user?.role === 'student') {
+      navigate('/student');
+    } else {
+      navigate('/login');
+    }
   };
 
   const handleFacultyClick = () => {
-    navigate('/faculty');
+    if (isAuthenticated && user?.role === 'faculty') {
+      navigate('/faculty');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -21,6 +36,35 @@ const HomePage = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">College Placement Portal</h1>
           <p className="text-gray-600 mb-8">Select your role to continue</p>
+          
+          {isAuthenticated ? (
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Welcome back, {user?.name || user?.email}!
+              </p>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-red-600 hover:text-red-500 mb-4"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="mb-6 space-y-2">
+              <Link
+                to="/login"
+                className="block text-sm text-blue-600 hover:text-blue-500"
+              >
+                Already have an account? Sign in
+              </Link>
+              <Link
+                to="/signup"
+                className="block text-sm text-green-600 hover:text-green-500"
+              >
+                New user? Create account
+              </Link>
+            </div>
+          )}
           
           <div className="space-y-4">
             <button
