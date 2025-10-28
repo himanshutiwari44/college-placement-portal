@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './components/auth/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import Login from './components/auth/Login';
+import Login from './components/Login';
 import Signup from './components/auth/Signup';
 import HomePage from './components/HomePage';
 import StudentLayout from './student/StudentLayout';
@@ -41,6 +41,8 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to="/student/dashboard" replace />} />
+            {/* Redirect common typo /student/setting -> /student/settings */}
+            <Route path="setting" element={<Navigate to="/student/settings" replace />} />
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="jobs" element={<JobListings />} />
             <Route path="applications" element={<Applications />} />
@@ -49,6 +51,8 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="resources" element={<Resources />} />
             <Route path="settings" element={<Settings />} />
+            {/* Fallback unknown student subroutes to dashboard */}
+            <Route path="*" element={<Navigate to="/student/dashboard" replace />} />
           </Route>
           
           {/* Protected Faculty Routes */}

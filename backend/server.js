@@ -1,13 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import mysql from 'mysql2/promise';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import studentProfileApi from './apis/studentApi/profileApi.js';
+import facultyProfileApi from './apis/facultyApi/profileApi.js';
 
 dotenv.config();
 
-const app=express();
-
+const app = express();
 
 app.use(cors());
 app.use(express.json());
@@ -20,54 +21,61 @@ const connectDB = async () => {
       throw new Error('Database connection string not found in environment variables');
     }
     
-    db = await mysql.createConnection(process.env.dbconn);
+    const pool = new pg.Pool({
+      connectionString: process.env.dbconn,
+    });
     
-    console.log('MySQL Connected!');
+    db = pool;
+    await pool.query('SELECT NOW()'); // Test connection
+    console.log('PostgreSQL Connected!');
 
-    // Add ping to verify connection
-    await db.ping();
-
-    // Ensure required tables exist (idempotent)
-    await db.execute(
-      `CREATE TABLE IF NOT EXISTS student_credentials (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    // Updated table creation for PostgreSQL
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS student_credentials (
+        id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL
-        
       )`
     );
 
-    await db.execute(
-      `CREATE TABLE IF NOT EXISTS teacher_credentials (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS teacher_credentials (
+        id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL
-        
       )`
     );
 
-    await db.execute(
-      `CREATE TABLE IF NOT EXISTS students (
-        studentid INT PRIMARY KEY,
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS students (
+        studentid INTEGER PRIMARY KEY,
         email VARCHAR(255) UNIQUE,
         name VARCHAR(255),
         university VARCHAR(255),
-        rollno INT,
-        cgpa FLOAT
+        rollno INTEGER,
+        cgpa FLOAT,
+        contact VARCHAr(10),
+        branch VARCHAR(255),
+        admission_year INTEGER,
+        grad_year INTEGER,
+        semester INTEGER,
+        linkedin VARCHAR(255),
+        github VARCHAR(255),
+        portfolio VARCHAR(255)
       )`
     );
 
-    await db.execute(
-      `CREATE TABLE IF NOT EXISTS teachers (
-        teacherid INT PRIMARY KEY,
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS teachers (
+        teacherid INTEGER PRIMARY KEY,
         email VARCHAR(255) UNIQUE,
         name VARCHAR(255),
         department VARCHAR(255)
       )`
     );
   } catch (error) {
-    console.error('MySQL Connection Failed:', error.message);
-    throw error; // Propagate error up
+    console.error('PostgreSQL Connection Failed:', error.message);
+    throw error;
   }
 }
 
@@ -79,6 +87,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add db to req object middleware
+app.use((req, res, next) => {
+  req.db = db;
+  next();
+});
+
 // Authentication Routes
 
 // Student Signup
@@ -86,28 +100,25 @@ app.post('/api/auth/student/signup', async (req, res) => {
   try {
     const { email, password, name, university, rollno, studentId, cgpa } = req.body;
     
-    // Check if student already exists
-    const [existingStudent] = await db.execute(
-      'SELECT * FROM student_credentials WHERE email = ?',
+    // Check if student exists
+    const existingStudent = await db.query(
+      'SELECT * FROM student_credentials WHERE email = $1',
       [email]
     );
     
-    if (existingStudent.length > 0) {
+    if (existingStudent.rows.length > 0) {
       return res.status(400).json({ message: 'Student already exists with this email' });
     }
     
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Insert student credentials
-    await db.execute(
-      'INSERT INTO student_credentials (email, password) VALUES (?, ?)',
+    await db.query(
+      'INSERT INTO student_credentials (email, password) VALUES ($1, $2)',
       [email, hashedPassword]
     );
     
-    // Insert student details (students table is created at startup in connectDB)
-    await db.execute(
-      'INSERT INTO students (studentid, email, name, university, rollno, cgpa) VALUES (?, ?, ?, ?, ?, ?)',
+    await db.query(
+      'INSERT INTO students (studentid, email, name, university, rollno, cgpa) VALUES ($1, $2, $3, $4, $5, $6)',
       [studentId, email, name, university, rollno, cgpa]
     );
     
@@ -124,12 +135,12 @@ app.post('/api/auth/faculty/signup', async (req, res) => {
     const { email, password, teacherId, name, department } = req.body;
     
     // Check if faculty already exists
-    const [existingFaculty] = await db.execute(
-      'SELECT * FROM teacher_credentials WHERE email = ?',
+    const existingFaculty = await db.query(
+      'SELECT * FROM teacher_credentials WHERE email = $1',
       [email]
     );
     
-    if (existingFaculty.length > 0) {
+    if (existingFaculty.rows.length > 0) {
       return res.status(400).json({ message: 'Faculty already exists with this email' });
     }
     
@@ -137,24 +148,24 @@ app.post('/api/auth/faculty/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Insert faculty credentials
-    await db.execute(
-      'INSERT INTO teacher_credentials (email, password) VALUES (?, ?)',
+    await db.query(
+      'INSERT INTO teacher_credentials (email, password) VALUES ($1, $2)',
       [email, hashedPassword]
     );
     
-    // Insert faculty details (assuming you have a teachers table)
-    await db.execute(
-      'CREATE TABLE IF NOT EXISTS teachers (teacherid INT PRIMARY KEY, email VARCHAR(255) UNIQUE, name VARCHAR(255), department VARCHAR(255))'
-    );
-    await db.execute(
-      'INSERT INTO teachers (teacherid,email, name, department) VALUES (?, ?, ?, ?)',
-      [teacherId,email,name, department]
+    // Insert faculty details
+    await db.query(
+      'INSERT INTO teachers (teacherid, email, name, department) VALUES ($1, $2, $3, $4)',
+      [teacherId, email, name, department]
     );
     
     res.status(201).json({ message: 'Faculty registered successfully' });
   } catch (error) {
     console.error('Faculty signup error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    // Send more specific error message
+    res.status(500).json({ 
+      message: error.message || 'Faculty registration failed. Please try again.'
+    });
   }
 });
 
@@ -162,6 +173,10 @@ app.post('/api/auth/faculty/signup', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    
+    if (!email || !password || !role) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
     
     let tableName, userTable;
     if (role === 'student') {
@@ -175,40 +190,49 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     // Find user credentials
-    const [credentials] = await db.execute(
-      `SELECT * FROM ${tableName} WHERE email = ?`,
+    const credentialsResult = await db.query(
+      `SELECT * FROM ${tableName} WHERE email = $1`,
       [email]
     );
     
-    if (credentials.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (credentialsResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Email not found' });
     }
     
     // Check password
-    const isValidPassword = await bcrypt.compare(password, credentials[0].password);
+    const isValidPassword = await bcrypt.compare(password, credentialsResult.rows[0].password);
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid password' });
     }
     
     // Get user details
-    const [userDetails] = await db.execute(
-      `SELECT * FROM ${userTable} WHERE email = ?`,
+    const userDetailsResult = await db.query(
+      `SELECT * FROM ${userTable} WHERE email = $1`,
       [email]
     );
     
+    if (userDetailsResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User details not found' });
+    }
+
     res.status(200).json({
       message: 'Login successful',
       user: {
-        email: credentials[0].email,
+        email: credentialsResult.rows[0].email,
         role: role,
-        ...userDetails[0]
+        ...userDetailsResult.rows[0]
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: error.message || 'Login failed. Please try again.'
+    });
   }
 });
+
+// Add new routes (prefixed with /api to match frontend)
+
 
 // Add error handler middleware
 app.use((err, req, res, next) => {
@@ -223,6 +247,8 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await connectDB();
+    app.use('/api/student', studentProfileApi);
+app.use('/api/faculty', facultyProfileApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });
