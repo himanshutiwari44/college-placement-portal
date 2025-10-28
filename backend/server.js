@@ -4,7 +4,9 @@ import cors from 'cors';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import studentProfileApi from './apis/studentApi/profileApi.js';
+import studentChangePasswordApi from './apis/studentApi/changePasswordApi.js';
 import facultyProfileApi from './apis/facultyApi/profileApi.js';
+import facultyChangePasswordApi from './apis/facultyApi/changePasswordApi.js';
 
 dotenv.config();
 
@@ -70,7 +72,8 @@ const connectDB = async () => {
         teacherid INTEGER PRIMARY KEY,
         email VARCHAR(255) UNIQUE,
         name VARCHAR(255),
-        department VARCHAR(255)
+        department VARCHAR(255),
+        contact VARCHAR(10)
       )`
     );
   } catch (error) {
@@ -247,8 +250,10 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await connectDB();
-    app.use('/api/student', studentProfileApi);
+app.use('/api/student', studentProfileApi);
+app.use('/api/student', studentChangePasswordApi);
 app.use('/api/faculty', facultyProfileApi);
+app.use('/api/faculty', facultyChangePasswordApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });
