@@ -1,43 +1,83 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/auth/AuthContext';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const stats = [
-    { title: 'Applied Jobs', value: '12', color: 'bg-blue-500' },
-    { title: 'Interviews Scheduled', value: '5', color: 'bg-green-500' },
-    { title: 'Offers Received', value: '2', color: 'bg-purple-500' },
-    { title: 'Profile Views', value: '28', color: 'bg-orange-500' }
-  ];
+  const { user } = useAuth();
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [allApplications, setAllApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const API_BASE = 'http://localhost:5000';
 
-  const recentJobs = [
-    {
-      id: 1,
-      company: 'Tech Corp',
-      position: 'Software Engineer',
-      location: 'Bangalore',
-      salary: '8-12 LPA',
-      status: 'Applied',
-      appliedDate: '2024-01-15'
-    },
-    {
-      id: 2,
-      company: 'DataSoft',
-      position: 'Data Analyst',
-      location: 'Mumbai',
-      salary: '6-10 LPA',
-      status: 'Interview Scheduled',
-      appliedDate: '2024-01-12'
-    },
-    {
-      id: 3,
-      company: 'CloudTech',
-      position: 'DevOps Engineer',
-      location: 'Pune',
-      salary: '10-15 LPA',
-      status: 'Offer Received',
-      appliedDate: '2024-01-10'
+  const userEmail = useMemo(() => (user?.email || localStorage.getItem('userEmail') || ''), [user]);
+
+  const fetchRecentApplications = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      if (!userEmail) throw new Error('Student email not found');
+      const res = await fetch(`${API_BASE}/api/student/applications?email=${encodeURIComponent(userEmail)}&limit=2`);
+      if (!res.ok) throw new Error('Failed to load applications');
+      const data = await res.json();
+      setRecentApplications(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const fetchAllApplications = async () => {
+    try {
+      if (!userEmail) return;
+      const res = await fetch(`${API_BASE}/api/student/applications?email=${encodeURIComponent(userEmail)}`);
+      if (!res.ok) throw new Error('Failed to load applications');
+      const data = await res.json();
+      setAllApplications(data);
+    } catch (e) {
+      // Do not override error banner for recent section unless empty
+      if (!error) setError(e.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentApplications();
+    fetchAllApplications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userEmail]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getStatusColor = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'applied') return 'bg-blue-100 text-blue-800';
+    if (s === 'interview scheduled') return 'bg-yellow-100 text-yellow-800';
+    if (s === 'offer received') return 'bg-green-100 text-green-800';
+    if (s === 'placed') return 'bg-purple-100 text-purple-800';
+    if (s === 'rejected') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const appliedCount = allApplications.length;
+  const interviewCount = allApplications.filter(a => (a.status || '').toLowerCase() === 'interview scheduled').length;
+  const offersCount = allApplications.filter(a => (a.status || '').toLowerCase() === 'offer received').length;
+  const rejectedCount = allApplications.filter(a => (a.status || '').toLowerCase() === 'rejected').length;
+
+  const stats = [
+    { title: 'Applied Jobs', value: String(appliedCount), color: 'bg-blue-500' },
+    { title: 'Interviews Scheduled', value: String(interviewCount), color: 'bg-green-500' },
+    { title: 'Offers Received', value: String(offersCount), color: 'bg-purple-500' },
+    { title: 'Rejected', value: String(rejectedCount), color: 'bg-red-400' }
   ];
 
   const upcomingEvents = [
@@ -94,33 +134,45 @@ const StudentDashboard = () => {
               <h2 className="text-xl font-semibold text-gray-900">Recent Applications</h2>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                {recentJobs.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{job.position}</h3>
-                      <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
-                      <p className="text-sm text-gray-500">Applied on {job.appliedDate}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        job.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
-                        job.status === 'Interview Scheduled' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {job.status}
-                      </span>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{job.salary}</p>
-                    </div>
+              {error && (
+                <div className="text-red-600 text-sm mb-4">{error}</div>
+              )}
+              {loading ? (
+                <div className="text-gray-600 text-sm">Loading applications...</div>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {recentApplications.length > 0 ? (
+                      recentApplications.map((app) => (
+                        <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{app.jobdescription || 'Job Application'}</h3>
+                            <p className="text-sm text-gray-600">{app.companyname || 'Company'} • {app.location || 'Location'}</p>
+                            <p className="text-sm text-gray-500">Status: {app.status || 'Applied'}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(app.status)}`}>
+                              {app.status || 'Applied'}
+                            </span>
+                            <p className="text-sm font-medium text-gray-900 mt-1">{app.salary || '—'}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No applications yet</p>
+                        <p className="text-sm mt-2">Start applying to jobs to see your recent applications here</p>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-              <button 
-                onClick={() => navigate('/student/applications')}
-                className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                View All Applications
-              </button>
+                  <button 
+                    onClick={() => navigate('/student/applications')}
+                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View All Applications
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

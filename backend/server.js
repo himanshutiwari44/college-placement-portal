@@ -5,8 +5,11 @@ import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import studentProfileApi from './apis/studentApi/profileApi.js';
 import studentChangePasswordApi from './apis/studentApi/changePasswordApi.js';
+import studentApplicationsApi from './apis/studentApi/applicationsApi.js';
+import studentJobsApi from './apis/studentApi/jobsApi.js';
 import facultyProfileApi from './apis/facultyApi/profileApi.js';
 import facultyChangePasswordApi from './apis/facultyApi/changePasswordApi.js';
+import facultyJobsApi from './apis/facultyApi/jobsApi.js';
 
 dotenv.config();
 
@@ -74,6 +77,33 @@ const connectDB = async () => {
         name VARCHAR(255),
         department VARCHAR(255),
         contact VARCHAR(10)
+      )`
+    );
+
+    // Jobs table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS jobs (
+        jobid INTEGER PRIMARY KEY,
+        companyname VARCHAR(255) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        salary VARCHAR(255) NOT NULL,
+        expereience VARCHAR(255) NOT NULL,
+        deadline DATE NOT NULL,
+        jobdescription VARCHAR(255) NOT NULL,
+        requirements VARCHAR(255) NOT NULL,
+        link VARCHAR(255) NOT NULL
+      )`
+    );
+
+    // Applications table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS applications (
+        id SERIAL PRIMARY KEY,
+        studentid INTEGER NOT NULL,
+        jobid INTEGER NOT NULL,
+        status VARCHAR(255) NOT NULL,
+        CONSTRAINT fk_app_student FOREIGN KEY(studentid) REFERENCES students(studentid) ON DELETE CASCADE,
+        CONSTRAINT fk_app_job FOREIGN KEY(jobid) REFERENCES jobs(jobid) ON DELETE CASCADE
       )`
     );
   } catch (error) {
@@ -252,8 +282,11 @@ const startServer = async () => {
     await connectDB();
 app.use('/api/student', studentProfileApi);
 app.use('/api/student', studentChangePasswordApi);
+app.use('/api/student', studentApplicationsApi);
+app.use('/api/student', studentJobsApi);
 app.use('/api/faculty', facultyProfileApi);
 app.use('/api/faculty', facultyChangePasswordApi);
+app.use('/api/faculty', facultyJobsApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

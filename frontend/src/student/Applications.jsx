@@ -1,112 +1,63 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '../components/auth/AuthContext';
 const Applications = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const API_BASE = 'http://localhost:5000';
 
-  const applications = [
-    {
-      id: 1,
-      company: 'Tech Corp',
-      logo: 'TC',
-      position: 'Software Engineer',
-      location: 'Bangalore',
-      salary: '8-12 LPA',
-      appliedDate: '2024-01-15',
-      status: 'Applied',
-      statusColor: 'bg-blue-100 text-blue-800',
-      lastUpdate: '2024-01-15',
-      notes: 'Application submitted successfully',
-      nextStep: 'Resume Review',
-      interviewDate: null,
-      interviewTime: null,
-      interviewType: null
-    },
-    {
-      id: 2,
-      company: 'DataSoft',
-      logo: 'DS',
-      position: 'Data Analyst',
-      location: 'Mumbai',
-      salary: '6-10 LPA',
-      appliedDate: '2024-01-12',
-      status: 'Interview Scheduled',
-      statusColor: 'bg-yellow-100 text-yellow-800',
-      lastUpdate: '2024-01-18',
-      notes: 'Technical interview scheduled',
-      nextStep: 'Technical Interview',
-      interviewDate: '2024-01-25',
-      interviewTime: '10:00 AM',
-      interviewType: 'Video Call'
-    },
-    {
-      id: 3,
-      company: 'CloudTech',
-      logo: 'CT',
-      position: 'DevOps Engineer',
-      location: 'Pune',
-      salary: '10-15 LPA',
-      appliedDate: '2024-01-10',
-      status: 'Offer Received',
-      statusColor: 'bg-green-100 text-green-800',
-      lastUpdate: '2024-01-20',
-      notes: 'Congratulations! Offer letter received',
-      nextStep: 'Accept/Decline Offer',
-      interviewDate: null,
-      interviewTime: null,
-      interviewType: null
-    },
-    {
-      id: 4,
-      company: 'FinTech Solutions',
-      logo: 'FS',
-      position: 'Frontend Developer',
-      location: 'Delhi',
-      salary: '7-11 LPA',
-      appliedDate: '2024-01-08',
-      status: 'Rejected',
-      statusColor: 'bg-red-100 text-red-800',
-      lastUpdate: '2024-01-16',
-      notes: 'Application rejected after initial screening',
-      nextStep: 'Apply to other positions',
-      interviewDate: null,
-      interviewTime: null,
-      interviewType: null
-    },
-    {
-      id: 5,
-      company: 'AI Innovations',
-      logo: 'AI',
-      position: 'Machine Learning Engineer',
-      location: 'Hyderabad',
-      salary: '12-18 LPA',
-      appliedDate: '2024-01-05',
-      status: 'Under Review',
-      statusColor: 'bg-purple-100 text-purple-800',
-      lastUpdate: '2024-01-19',
-      notes: 'Application is being reviewed by HR team',
-      nextStep: 'Wait for response',
-      interviewDate: null,
-      interviewTime: null,
-      interviewType: null
+  const statusOptions = [
+    'applied',
+    'interview scheduled',
+    'offer received',
+    'placed',
+    'rejected',
+  ];
+
+  const userEmail = useMemo(() => (user?.email || localStorage.getItem('userEmail') || ''), [user]);
+
+  const fetchApplications = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      if (!userEmail) throw new Error('Student email not found');
+      const res = await fetch(`${API_BASE}/api/student/applications?email=${encodeURIComponent(userEmail)}`);
+      if (!res.ok) throw new Error('Failed to load applications');
+      const data = await res.json();
+      setApplications(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const tabs = [
-    { id: 'all', label: 'All Applications', count: applications.length },
-    { id: 'applied', label: 'Applied', count: applications.filter(app => app.status === 'Applied').length },
-    { id: 'interview', label: 'Interview', count: applications.filter(app => app.status === 'Interview Scheduled').length },
-    { id: 'offer', label: 'Offers', count: applications.filter(app => app.status === 'Offer Received').length },
-    { id: 'rejected', label: 'Rejected', count: applications.filter(app => app.status === 'Rejected').length }
-  ];
+  useEffect(() => {
+    fetchApplications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userEmail]);
+
+  const tabs = useMemo(() => {
+    return [
+      { id: 'all', label: 'All Applications', count: applications.length },
+      { id: 'applied', label: 'Applied', count: applications.filter(app => app.status?.toLowerCase() === 'applied').length },
+      { id: 'interview', label: 'Interview', count: applications.filter(app => app.status?.toLowerCase() === 'interview scheduled').length },
+      { id: 'offer', label: 'Offers', count: applications.filter(app => app.status?.toLowerCase() === 'offer received').length },
+      { id: 'rejected', label: 'Rejected', count: applications.filter(app => app.status?.toLowerCase() === 'rejected').length }
+    ];
+  }, [applications]);
 
   const filteredApplications = activeTab === 'all' 
     ? applications 
     : applications.filter(app => {
         switch(activeTab) {
-          case 'applied': return app.status === 'Applied';
-          case 'interview': return app.status === 'Interview Scheduled';
-          case 'offer': return app.status === 'Offer Received';
-          case 'rejected': return app.status === 'Rejected';
+          case 'applied': return app.status?.toLowerCase() === 'applied';
+          case 'interview': return app.status?.toLowerCase() === 'interview scheduled';
+          case 'offer': return app.status?.toLowerCase() === 'offer received';
+          case 'rejected': return app.status?.toLowerCase() === 'rejected';
           default: return true;
         }
       });
@@ -122,12 +73,28 @@ const Applications = () => {
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case 'Applied': return '📝';
-      case 'Interview Scheduled': return '📅';
-      case 'Offer Received': return '🎉';
-      case 'Rejected': return '❌';
-      case 'Under Review': return '👀';
+      case 'applied': return '📝';
+      case 'interview scheduled': return '📅';
+      case 'offer received': return '🎉';
+      case 'rejected': return '❌';
+      case 'under review': return '👀';
       default: return '📋';
+    }
+  };
+
+  const updateStatus = async (id, status) => {
+    try {
+      setError('');
+      const res = await fetch(`${API_BASE}/api/student/applications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      const updated = await res.json();
+      setApplications(prev => prev.map(a => a.id === updated.id ? { ...a, status: updated.status } : a));
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -183,6 +150,13 @@ const Applications = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 text-red-600">{error}</div>
+        )}
+        {loading && (
+          <div className="mb-4 text-gray-600">Loading applications...</div>
+        )}
+
         {/* Applications List */}
         <div className="space-y-6">
           {filteredApplications.map((application) => (
@@ -191,19 +165,19 @@ const Applications = () => {
                 <div className="flex items-start space-x-4">
                   {/* Company Logo */}
                   <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    {application.logo}
+                    {application.companyname?.slice(0,2)?.toUpperCase() || 'CO'}
                   </div>
                   
                   {/* Application Details */}
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{application.position}</h3>
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${application.statusColor}`}>
-                        {getStatusIcon(application.status)} {application.status}
+                      <h3 className="text-xl font-semibold text-gray-900">{application.jobdescription}</h3>
+                      <span className={`px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800`}>
+                        {getStatusIcon(application.status?.toLowerCase())} {application.status}
                       </span>
                     </div>
                     
-                    <p className="text-lg font-medium text-gray-700 mb-2">{application.company}</p>
+                    <p className="text-lg font-medium text-gray-700 mb-2">{application.companyname}</p>
                     
                     <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
                       <span className="flex items-center">
@@ -216,7 +190,7 @@ const Applications = () => {
                       </span>
                       <span className="flex items-center">
                         <span className="mr-1">📅</span>
-                        Applied: {formatDate(application.appliedDate)}
+                        Deadline: {application.deadline ? formatDate(application.deadline) : '—'}
                       </span>
                     </div>
                     
@@ -224,81 +198,34 @@ const Applications = () => {
                     <div className="bg-gray-50 rounded-lg p-4 mb-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm font-medium text-gray-700 mb-1">Last Updated</p>
-                          <p className="text-sm text-gray-600">{formatDate(application.lastUpdate)}</p>
+                          <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
+                          <select
+                            value={application.status?.toLowerCase() || 'applied'}
+                            onChange={(e) => updateStatus(application.id, e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg"
+                          >
+                            {statusOptions.map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700 mb-1">Next Step</p>
-                          <p className="text-sm text-gray-600">{application.nextStep}</p>
+                          <p className="text-sm font-medium text-gray-700 mb-1">Application Link</p>
+                          <a href={application.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all">{application.link}</a>
                         </div>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-sm font-medium text-gray-700 mb-1">Notes</p>
-                        <p className="text-sm text-gray-600">{application.notes}</p>
                       </div>
                     </div>
                     
-                    {/* Interview Details */}
-                    {application.interviewDate && (
-                      <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                        <h4 className="font-medium text-blue-900 mb-2">Interview Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="font-medium text-blue-800">Date</p>
-                            <p className="text-blue-700">{formatDate(application.interviewDate)}</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-blue-800">Time</p>
-                            <p className="text-blue-700">{application.interviewTime}</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-blue-800">Type</p>
-                            <p className="text-blue-700">{application.interviewType}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Extra details can go here */}
                   </div>
                 </div>
                 
-                {/* Action Buttons */}
+                {/* Action Buttons
                 <div className="flex flex-col space-y-2">
-                  {application.status === 'Applied' && (
-                    <button
-                      onClick={() => handleWithdrawApplication(application.id)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
-                    >
-                      Withdraw
-                    </button>
-                  )}
-                  
-                  {application.status === 'Offer Received' && (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleAcceptOffer(application.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
-                      >
-                        Accept Offer
-                      </button>
-                      <button
-                        onClick={() => handleDeclineOffer(application.id)}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  )}
-                  
-                  {application.status === 'Interview Scheduled' && (
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
-                      View Details
-                    </button>
-                  )}
-                  
                   <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition-colors">
                     View Job
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
           ))}
@@ -311,28 +238,22 @@ const Applications = () => {
               <span className="text-gray-400 text-2xl">📋</span>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
-            <p className="text-gray-600 mb-4">
-              {activeTab === 'all' 
-                ? "You haven't applied to any jobs yet" 
-                : `No applications with status "${activeTab}"`}
-            </p>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-              Browse Jobs
-            </button>
+            
+          
           </div>
         )}
 
         {/* Application Statistics */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Application Statistics</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {tabs.slice(1).map((tab) => {
               const count = applications.filter(app => {
                 switch(tab.id) {
-                  case 'applied': return app.status === 'Applied';
-                  case 'interview': return app.status === 'Interview Scheduled';
-                  case 'offer': return app.status === 'Offer Received';
-                  case 'rejected': return app.status === 'Rejected';
+                  case 'applied': return app.status?.toLowerCase() === 'applied';
+                  case 'interview': return app.status?.toLowerCase() === 'interview scheduled';
+                  case 'offer': return app.status?.toLowerCase() === 'offer received';
+                  case 'rejected': return app.status?.toLowerCase() === 'rejected';
                   default: return true;
                 }
               }).length;
@@ -345,7 +266,7 @@ const Applications = () => {
               );
             })}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

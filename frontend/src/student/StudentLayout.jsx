@@ -11,9 +11,9 @@ const StudentLayout = () => {
     { id: 'jobs', name: 'Jobs', icon: '💼', path: '/student/jobs' },
     { id: 'applications', name: 'Applications', icon: '📋', path: '/student/applications' },
     { id: 'events', name: 'Events', icon: '📅', path: '/student/events' },
-    { id: 'interviews', name: 'Interviews', icon: '🎯', path: '/student/interviews' },
+    // { id: 'interviews', name: 'Interviews', icon: '🎯', path: '/student/interviews' },
     { id: 'notifications', name: 'Notifications', icon: '🔔', path: '/student/notifications' },
-    { id: 'resources', name: 'Resources', icon: '📚', path: '/student/resources' },
+    // { id: 'resources', name: 'Resources', icon: '📚', path: '/student/resources' },
     { id: 'settings', name: 'Settings', icon: '⚙️', path: '/student/settings' }
   ];
 

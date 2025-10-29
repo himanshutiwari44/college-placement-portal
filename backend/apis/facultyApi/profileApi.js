@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-// Get faculty profile
+
 router.get('/profile/:email', async (req, res) => {
   try {
     const { email }  = req.params;
@@ -20,7 +20,7 @@ router.get('/profile/:email', async (req, res) => {
   }
 });
 
-// Update faculty profile
+
 router.put('/profile/:email', async (req, res) => {
   try {
     const { email } = req.params;
