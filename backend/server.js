@@ -10,6 +10,8 @@ import studentJobsApi from './apis/studentApi/jobsApi.js';
 import facultyProfileApi from './apis/facultyApi/profileApi.js';
 import facultyChangePasswordApi from './apis/facultyApi/changePasswordApi.js';
 import facultyJobsApi from './apis/facultyApi/jobsApi.js';
+import facultyDashboardApi from './apis/facultyApi/dashboardApi.js';
+import facultyStudentsApi from './apis/facultyApi/studentsApi.js';
 
 dotenv.config();
 
@@ -99,11 +101,11 @@ const connectDB = async () => {
     await db.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id SERIAL PRIMARY KEY,
-        studentid INTEGER NOT NULL,
-        jobid INTEGER NOT NULL,
-        status VARCHAR(255) NOT NULL,
-        CONSTRAINT fk_app_student FOREIGN KEY(studentid) REFERENCES students(studentid) ON DELETE CASCADE,
-        CONSTRAINT fk_app_job FOREIGN KEY(jobid) REFERENCES jobs(jobid) ON DELETE CASCADE
+        job_id INTEGER NOT NULL,
+        student_email VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        applied_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_email) REFERENCES students(email)
       )`
     );
   } catch (error) {
@@ -265,7 +267,52 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Add new routes (prefixed with /api to match frontend)
+app.get('/api/faculty/applications', async (req, res) => {
+  try {
+    // First get all applications with student details
+    const result = await db.query(`
+      SELECT 
+        a.job_id,
+        a.status,
+        a.applied_date,
+        s.name as student_name,
+        s.email as student_email,
+        s.cgpa,
+        s.branch,
+        s.semester,
+        s.university
+      FROM applications a
+      JOIN students s ON a.student_email = s.email
+      ORDER BY a.applied_date DESC
+    `);
+    
+    // Group applications by job_id
+    const applications = result.rows.reduce((acc, curr) => {
+      if (!acc[curr.job_id]) {
+        acc[curr.job_id] = {
+          job_id: curr.job_id,
+          applicants: []
+        };
+      }
+      acc[curr.job_id].applicants.push({
+        name: curr.student_name,
+        email: curr.student_email,
+        cgpa: curr.cgpa,
+        branch: curr.branch,
+        semester: curr.semester,
+        university: curr.university,
+        status: curr.status,
+        applied_date: curr.applied_date
+      });
+      return acc;
+    }, {});
 
+    res.json(Object.values(applications));
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Add error handler middleware
 app.use((err, req, res, next) => {
@@ -287,6 +334,8 @@ app.use('/api/student', studentJobsApi);
 app.use('/api/faculty', facultyProfileApi);
 app.use('/api/faculty', facultyChangePasswordApi);
 app.use('/api/faculty', facultyJobsApi);
+app.use('/api/faculty', facultyDashboardApi);
+app.use('/api/faculty', facultyStudentsApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

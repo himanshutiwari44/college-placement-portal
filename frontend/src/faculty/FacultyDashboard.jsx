@@ -1,138 +1,47 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const FacultyDashboard = () => {
-  const stats = [
-    { 
-      title: 'Total Students', 
-      value: '245', 
-      color: 'bg-blue-500',
-      icon: '👥',
-      change: '+12%',
-      period: 'vs last month'
-    },
-    { 
-      title: 'Active Jobs', 
-      value: '18', 
-      color: 'bg-green-500',
-      icon: '💼',
-      change: '+3',
-      period: 'new openings'
-    },
-    { 
-      title: 'Applications', 
-      value: '156', 
-      color: 'bg-purple-500',
-      icon: '📋',
-      change: '+23%',
-      period: 'vs last month'
-    },
-    { 
-      title: 'Placements', 
-      value: '89', 
-      color: 'bg-orange-500',
-      icon: '🎉',
-      change: '+15%',
-      period: 'vs last month'
-    },
-    { 
-      title: 'Interviews Scheduled', 
-      value: '67', 
-      color: 'bg-indigo-500',
-      icon: '🎯',
-      change: '+8',
-      period: 'this week'
-    },
-    { 
-      title: 'Companies Active', 
-      value: '12', 
-      color: 'bg-teal-500',
-      icon: '🏢',
-      change: '+2',
-      period: 'new partnerships'
-    }
-  ];
+  const API_BASE = 'http://localhost:5000/api';
+  const [cards, setCards] = useState(null);
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const recentApplications = [
-    {
-      id: 1,
-      studentName: 'John Doe',
-      rollNumber: 'CS2021001',
-      company: 'Tech Corp',
-      position: 'Software Engineer',
-      appliedDate: '2024-01-20',
-      status: 'Under Review',
-      matchScore: 85
-    },
-    {
-      id: 2,
-      studentName: 'Sarah Johnson',
-      rollNumber: 'CS2021002',
-      company: 'DataSoft',
-      position: 'Data Analyst',
-      appliedDate: '2024-01-19',
-      status: 'Shortlisted',
-      matchScore: 92
-    },
-    {
-      id: 3,
-      studentName: 'Mike Chen',
-      rollNumber: 'CS2021003',
-      company: 'CloudTech',
-      position: 'DevOps Engineer',
-      appliedDate: '2024-01-18',
-      status: 'Interview Scheduled',
-      matchScore: 78
-    },
-    {
-      id: 4,
-      studentName: 'Emily Watson',
-      rollNumber: 'CS2021004',
-      company: 'AI Innovations',
-      position: 'ML Engineer',
-      appliedDate: '2024-01-17',
-      status: 'Selected',
-      matchScore: 95
-    }
-  ];
+  const stats = useMemo(() => {
+    const counts = cards || {};
+    return [
+      { title: 'Total Students', value: String(counts.totalStudents ?? 0), color: 'bg-blue-500', icon: '👥', change: '', period: '' },
+      { title: 'Active Jobs', value: String(counts.activeJobs ?? 0), color: 'bg-green-500', icon: '💼', change: '', period: '' },
+      { title: 'Applications', value: String(counts.applications ?? 0), color: 'bg-purple-500', icon: '📋', change: '', period: '' },
+      { title: 'Placements', value: String(counts.placements ?? 0), color: 'bg-orange-500', icon: '🎉', change: '', period: '' },
+      { title: 'Interviews Scheduled', value: String(counts.interviewsScheduled ?? 0), color: 'bg-indigo-500', icon: '🎯', change: '', period: '' },
+      { title: 'Companies Active', value: String(counts.companiesActive ?? 0), color: 'bg-teal-500', icon: '🏢', change: '', period: '' },
+    ];
+  }, [cards]);
 
-  const upcomingInterviews = [
-    {
-      id: 1,
-      student: 'Alex Rodriguez',
-      rollNumber: 'CS2021005',
-      company: 'FinTech Solutions',
-      position: 'Frontend Developer',
-      interviewDate: '2024-01-25',
-      interviewTime: '10:00 AM',
-      type: 'Technical Interview',
-      interviewer: 'John Smith',
-      status: 'Confirmed'
-    },
-    {
-      id: 2,
-      student: 'Lisa Wang',
-      rollNumber: 'CS2021006',
-      company: 'Tech Corp',
-      position: 'Software Engineer',
-      interviewDate: '2024-01-26',
-      interviewTime: '2:00 PM',
-      type: 'HR Interview',
-      interviewer: 'Sarah Johnson',
-      status: 'Confirmed'
-    },
-    {
-      id: 3,
-      student: 'David Brown',
-      rollNumber: 'CS2021007',
-      company: 'DataSoft',
-      position: 'Data Analyst',
-      interviewDate: '2024-01-27',
-      interviewTime: '11:00 AM',
-      type: 'Panel Interview',
-      interviewer: 'Mike Chen, Lisa Wang',
-      status: 'Pending Confirmation'
-    }
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const [cardsRes, recentRes] = await Promise.all([
+          fetch(`${API_BASE}/faculty/dashboard/cards`),
+          fetch(`${API_BASE}/faculty/dashboard/recent-applications?limit=3`),
+        ]);
+        const cardsBody = await cardsRes.json().catch(() => ({}));
+        const recentBody = await recentRes.json().catch(() => ([]));
+        if (!cardsRes.ok) throw new Error(cardsBody.message || 'Failed to load dashboard');
+        if (!recentRes.ok) throw new Error(recentBody.message || 'Failed to load recent applications');
+        setCards(cardsBody);
+        setRecentApplications(recentBody || []);
+      } catch (e) {
+        setError(e.message || 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const getStatusWeight = (status) => {
     switch(status) {
@@ -141,22 +50,6 @@ const FacultyDashboard = () => {
       case 'Interview Scheduled': return 'bg-purple-100 text-purple-800';
       case 'Selected': return 'bg-green-100 text-green-800';
       case 'Rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getMatchScoreColor = (score) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-blue-600';
-    if (score >= 70) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getInterviewStatusColor = (status) => {
-    switch(status) {
-      case 'Confirmed': return 'bg-green-100 text-green-800';
-      case 'Pending Confirmation': return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelled': return 'bg-red-109 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -187,95 +80,56 @@ const FacultyDashboard = () => {
                 <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
                   <span className="text-white text-xl">{stat.icon}</span>
                 </div>
-                <span className="text-xs text-gray-500">{stat.change}</span>
+                {stat.change ? (<span className="text-xs text-gray-500">{stat.change}</span>) : <span />}
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.period}</p>
+                {stat.period ? (<p className="text-xs text-gray-500">{stat.period}</p>) : null}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
           {/* Recent Applications */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">Recent Applications</h2>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View All
-                </button>
+                
               </div>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                {recentApplications.map((application) => (
-                  <div key={application.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{application.studentName}</h3>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusWeight(application.status)}`}>
-                          {application.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600">{application.rollNumber}</p>
-                      <p className="text-sm text-gray-700">{application.company} • {application.position}</p>
-                      <p className="text-xs text-gray-500">Applied: {formatDate(application.appliedDate)}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${getMatchScoreColor(application.matchScore)}`}>
-                        {application.matchScore}%
-                      </div>
-                      <p className="text-xs text-gray-500">Match Score</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Upcoming Interviews */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Upcoming Interviews</h2>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View All
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {upcomingInterviews.map((interview) => (
-                  <div key={interview.id} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{interview.student}</h3>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getInterviewStatusColor(interview.status)}`}>
-                          {interview.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600">{interview.rollNumber}</p>
-                      <p className="text-sm text-gray-700">{interview.company} • {interview.position}</p>
-                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
-                        <span>📅 {formatDate(interview.interviewDate)}</span>
-                        <span>🕐 {interview.interviewTime}</span>
-                        <span>👤 {interview.interviewer}</span>
+              {error ? (
+                <div className="text-sm text-red-600">{error}</div>
+              ) : (
+                <div className="space-y-4">
+                  {(recentApplications || []).map((application) => (
+                    <div key={application.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="font-semibold text-gray-900">{application.student_name || 'Unknown Student'}</h3>
+                          {application.status ? (
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusWeight(application.status)}`}>
+                              {application.status}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-sm text-gray-600">{application.roll_number ? `Roll: ${application.roll_number}` : ''}</p>
+                        <p className="text-sm text-gray-700">{application.company_name || ''}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500">{interview.type}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
 
         {/* Recent Activity */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
           <div className="space-y-3">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -306,7 +160,7 @@ const FacultyDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

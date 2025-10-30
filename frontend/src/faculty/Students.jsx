@@ -1,116 +1,144 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const Students = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [students, setStudents] = useState([]);
+  const [cards, setCards] = useState({ totalStudents: 0, placedStudents: 0, averageCgpa: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const API_BASE = 'http://localhost:5000/api/faculty';
 
-  const students = [
-    {
-      id: 1,
-      name: 'John Doe',
-      rollNumber: 'CS2021001',
-      email: 'john.doe@student.edu',
-      branch: 'Computer Science',
-      year: '2024',
-      cgpa: '8.5',
-      phone: '+91 9876543210',
-      status: 'Active',
-      placements: 0,
-      applications: 12,
-      interviews: 3,
-      lastActive: '2024-01-20T10:30:00Z'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      rollNumber: 'CS2021002',
-      email: 'sarah.johnson@student.edu',
-      branch: 'Computer Science',
-      year: '2024',
-      cgpa: '8.8',
-      phone: '+91 9876543211',
-      status: 'Active',
-      placements: 1,
-      applications: 8,
-      interviews: 2,
-      lastActive: '2024-01-20T09:15:00Z'
-    },
-    {
-      id: 3,
-      name: 'Mike Chen',
-      rollNumber: 'IT2021001',
-      email: 'mike.chen@student.edu',
-      branch: 'Information Technology',
-      year: '2024',
-      cgpa: '8.2',
-      phone: '+91 9876543212',
-      status: 'Active',
-      placements: 0,
-      applications: 15,
-      interviews: 4,
-      lastActive: '2024-01-20T08:45:00Z'
-    },
-    {
-      id: 4,
-      name: 'Emily Watson',
-      rollNumber: 'CS2021003',
-      email: 'emily.watson@student.edu',
-      branch: 'Computer Science',
-      year: '2024',
-      cgpa: '9.1',
-      phone: '+91 9876543213',
-      status: 'Placed',
-      placements: 1,
-      applications: 6,
-      interviews: 2,
-      lastActive: '2024-01-19T16:30:00Z'
-    },
-    {
-      id: 5,
-      name: 'Alex Rodriguez',
-      rollNumber: 'EC2021001',
-      email: 'alex.rodriguez@student.edu',
-      branch: 'Electronics & Communication',
-      year: '2024',
-      cgpa: '8.7',
-      phone: '+91 9876543214',
-      status: 'Active',
-      placements: 0,
-      applications: 10,
-      interviews: 3,
-      lastActive: '2024-01-19T14:20:00Z'
-    },
-    {
-      id: 6,
-      name: 'Lisa Wang',
-      rollNumber: 'CS2021004',
-      email: 'lisa.wang@student.edu',
-      branch: 'Computer Science',
-      year: '2024',
-      cgpa: '8.9',
-      phone: '+91 9876543215',
-      status: 'Placed',
-      placements: 1,
-      applications: 4,
-      interviews: 1,
-      lastActive: '2024-01-19T11:00:00Z'
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(''); // 'details' | 'applications'
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [modalData, setModalData] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const fetchCards = async () => {
+    const res = await fetch(`${API_BASE}/students/cards`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.message || 'Failed to load cards');
+    setCards(body);
+  };
+
+  const fetchStudents = async (term) => {
+    const url = term ? `${API_BASE}/students?search=${encodeURIComponent(term)}` : `${API_BASE}/students`;
+    const res = await fetch(url);
+    const body = await res.json().catch(() => ([]));
+    if (!res.ok) throw new Error(body.message || 'Failed to load students');
+    // Normalize for UI expectations
+    const normalized = (body || []).map((s) => ({
+      id: s.studentid,
+      name: s.name,
+      rollNumber: s.rollno,
+      email: s.email,
+      branch: s.branch,
+      year: s.year,
+      cgpa: String(s.cgpa ?? ''),
+      phone: s.phone || '',
+      applications: s.applications || 0,
+      interviews: s.interviews || 0,
+      placements: s.placements || 0,
+      status: (s.placements || 0) > 0 ? 'Placed' : 'Active',
+      lastActive: null,
+    }));
+    setStudents(normalized);
+  };
+
+  const openDetails = async (student) => {
+    try {
+      setSelectedStudent(student);
+      setShowModal(true);
+      setModalType('details');
+      setModalLoading(true);
+      setModalError('');
+      const res = await fetch(`${API_BASE}/students/${encodeURIComponent(student.id)}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || 'Failed to load student details');
+      setModalData(body);
+    } catch (e) {
+      setModalError(e.message || 'Failed to load details');
+    } finally {
+      setModalLoading(false);
     }
-  ];
+  };
 
-  const branches = ['All', 'Computer Science', 'Information Technology', 'Electronics & Communication', 'Mechanical Engineering'];
-  const years = ['All', '2024', '2023', '2022'];
+  const openApplications = async (student) => {
+    try {
+      setSelectedStudent(student);
+      setShowModal(true);
+      setModalType('applications');
+      setModalLoading(true);
+      setModalError('');
+      const res = await fetch(`${API_BASE}/students/${encodeURIComponent(student.id)}/applications`);
+      const body = await res.json().catch(() => ([]));
+      if (!res.ok) throw new Error(body.message || 'Failed to load applications');
+      setModalData(body);
+    } catch (e) {
+      setModalError(e.message || 'Failed to load applications');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalType('');
+    setModalData(null);
+    setSelectedStudent(null);
+    setModalError('');
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        await Promise.all([fetchCards(), fetchStudents('')]);
+      } catch (e) {
+        setError(e.message || 'Failed to load students');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        await fetchStudents(searchTerm);
+      } catch (e) {
+        setError(e.message || 'Failed to search students');
+      } finally {
+        setLoading(false);
+      }
+    };
+    // basic debounce
+    const t = setTimeout(run, 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  const branches = useMemo(() => ['All', ...Array.from(new Set((students || []).map(s => s.branch).filter(Boolean)))], [students]);
+  const years = useMemo(() => ['All', ...Array.from(new Set((students || []).map(s => s.year).filter(Boolean)))], [students]);
   const statuses = ['All', 'Active', 'Placed', 'Inactive'];
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredStudents = (students || []).filter((student) => {
+    const st = (searchTerm || '').toLowerCase();
+    const name = (student.name || '').toLowerCase();
+    const roll = (student.rollNumber != null ? String(student.rollNumber) : '').toLowerCase();
+    const email = (student.email || '').toLowerCase();
+    const matchesSearch = !st || name.includes(st) || roll.includes(st) || email.includes(st);
     const matchesBranch = selectedBranch === '' || selectedBranch === 'All' || student.branch === selectedBranch;
-    const matchesYear = selectedYear === '' || selectedYear === 'All' || student.year === selectedYear;
+    const matchesYear = selectedYear === '' || selectedYear === 'All' || String(student.year) === String(selectedYear);
     const matchesStatus = selectedStatus === '' || selectedStatus === 'All' || student.status === selectedStatus;
-    
+
     return matchesSearch && matchesBranch && matchesYear && matchesStatus;
   });
 
@@ -140,10 +168,9 @@ const Students = () => {
     return 'text-red-600';
   };
 
-  const totalStudents = students.length;
-  const activeStudents = students.filter(s => s.status === 'Active').length;
-  const placedStudents = students.filter(s => s.status === 'Placed').length;
-  const averageCGPA = (students.reduce((sum, s) => sum + parseFloat(s.cgpa), 0) / students.length).toFixed(2);
+  const totalStudents = cards.totalStudents || students.length;
+  const placedStudents = cards.placedStudents || students.filter(s => s.status === 'Placed').length;
+  const averageCGPA = (cards.averageCgpa ?? 0).toFixed ? cards.averageCgpa.toFixed(2) : String(cards.averageCgpa);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -167,17 +194,7 @@ const Students = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl">✅</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Students</p>
-                <p className="text-2xl font-bold text-gray-900">{activeStudents}</p>
-              </div>
-            </div>
-          </div>
+         
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -211,11 +228,11 @@ const Students = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, roll number, or email..."
+                placeholder="Search by name or email..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
               <select
                 value={selectedBranch}
@@ -226,8 +243,8 @@ const Students = () => {
                   <option key={branch} value={branch}>{branch}</option>
                 ))}
               </select>
-            </div>
-            <div>
+            </div> */}
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
               <select
                 value={selectedYear}
@@ -238,8 +255,8 @@ const Students = () => {
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
-            </div>
-            <div>
+            </div> */}
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={selectedStatus}
@@ -250,7 +267,7 @@ const Students = () => {
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -269,9 +286,7 @@ const Students = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Info</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placement Activity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -300,11 +315,6 @@ const Students = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(student.status)}`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <div className="flex space-x-4">
                           <span className="flex items-center">
@@ -322,18 +332,13 @@ const Students = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(student.lastActive)}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900">
+                        <button className="text-blue-600 hover:text-blue-900" onClick={() => openDetails(student)}>
                           View Details
                         </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          Edit
-                        </button>
-                        <button className="text-purple-600 hover:text-purple-900">
+                       
+                        <button className="text-purple-600 hover:text-purple-900" onClick={() => openApplications(student)}>
                           Applications
                         </button>
                       </div>
@@ -356,21 +361,62 @@ const Students = () => {
           </div>
         )}
 
-        {/* Export Options */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Data</h3>
-          <div className="flex space-x-4">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Export to Excel
-            </button>
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              Export to PDF
-            </button>
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-              Print Report
-            </button>
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg border border-gray-200">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {modalType === 'details' ? 'Student Details' : 'Student Applications'}
+                </h3>
+                <button className="text-gray-500 hover:text-gray-700" onClick={closeModal}>✖</button>
+              </div>
+              <div className="p-4">
+                {modalLoading ? (
+                  <div className="text-gray-600">Loading...</div>
+                ) : modalError ? (
+                  <div className="text-red-600 text-sm">{modalError}</div>
+                ) : modalType === 'details' && modalData ? (
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-900"><span className="font-medium">Name:</span> {modalData.name || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Email:</span> {modalData.email || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Roll No:</span> {modalData.rollno || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Branch:</span> {modalData.branch || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">University:</span> {modalData.university || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Admission Year:</span> {modalData.admission_year || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Graduation Year:</span> {modalData.grad_year || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Semester:</span> {modalData.semester || ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">CGPA:</span> {modalData.cgpa ?? ''}</div>
+                    <div className="text-sm text-gray-900"><span className="font-medium">Contact:</span> {modalData.contact || ''}</div>
+                    <div className="text-sm text-blue-700"><a href={modalData.linkedin || '#'} target="_blank" rel="noreferrer">LinkedIn</a></div>
+                    <div className="text-sm text-blue-700"><a href={modalData.github || '#'} target="_blank" rel="noreferrer">GitHub</a></div>
+                    <div className="text-sm text-blue-700"><a href={modalData.portfolio || '#'} target="_blank" rel="noreferrer">Portfolio</a></div>
+                  </div>
+                ) : modalType === 'applications' && Array.isArray(modalData) ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {modalData.length === 0 && (
+                      <div className="text-gray-600 text-sm">No applications found.</div>
+                    )}
+                    {modalData.map((app) => (
+                      <div key={app.id} className="p-3 bg-gray-50 rounded border">
+                        <div className="text-sm font-medium text-gray-900">{app.companyname}</div>
+                        <div className="text-xs text-gray-600">Job ID: {app.jobid}</div>
+                        <div className="text-xs text-gray-600">Status: {app.status}</div>
+                        <div className="text-xs text-gray-600">Location: {app.location}</div>
+                        <div className="text-xs text-gray-600">Salary: {app.salary}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <div className="p-4 border-t text-right">
+                <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={closeModal}>Close</button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Export Options */}
+        
       </div>
     </div>
   );
