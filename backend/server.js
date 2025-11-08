@@ -1,5 +1,5 @@
 import express from 'express';
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'; 
 import cors from 'cors';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
@@ -12,6 +12,7 @@ import facultyChangePasswordApi from './apis/facultyApi/changePasswordApi.js';
 import facultyJobsApi from './apis/facultyApi/jobsApi.js';
 import facultyDashboardApi from './apis/facultyApi/dashboardApi.js';
 import facultyStudentsApi from './apis/facultyApi/studentsApi.js';
+import facultyApplicationsApi from './apis/facultyApi/applicationsApi.js';
 
 dotenv.config();
 
@@ -36,7 +37,6 @@ const connectDB = async () => {
     await pool.query('SELECT NOW()'); // Test connection
     console.log('PostgreSQL Connected!');
 
-    // Updated table creation for PostgreSQL
     await db.query(`
       CREATE TABLE IF NOT EXISTS student_credentials (
         id SERIAL PRIMARY KEY,
@@ -82,7 +82,7 @@ const connectDB = async () => {
       )`
     );
 
-    // Jobs table
+    
     await db.query(`
       CREATE TABLE IF NOT EXISTS jobs (
         jobid INTEGER PRIMARY KEY,
@@ -97,7 +97,7 @@ const connectDB = async () => {
       )`
     );
 
-    // Applications table
+    
     await db.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id SERIAL PRIMARY KEY,
@@ -266,53 +266,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Add new routes (prefixed with /api to match frontend)
-app.get('/api/faculty/applications', async (req, res) => {
-  try {
-    // First get all applications with student details
-    const result = await db.query(`
-      SELECT 
-        a.job_id,
-        a.status,
-        a.applied_date,
-        s.name as student_name,
-        s.email as student_email,
-        s.cgpa,
-        s.branch,
-        s.semester,
-        s.university
-      FROM applications a
-      JOIN students s ON a.student_email = s.email
-      ORDER BY a.applied_date DESC
-    `);
-    
-    // Group applications by job_id
-    const applications = result.rows.reduce((acc, curr) => {
-      if (!acc[curr.job_id]) {
-        acc[curr.job_id] = {
-          job_id: curr.job_id,
-          applicants: []
-        };
-      }
-      acc[curr.job_id].applicants.push({
-        name: curr.student_name,
-        email: curr.student_email,
-        cgpa: curr.cgpa,
-        branch: curr.branch,
-        semester: curr.semester,
-        university: curr.university,
-        status: curr.status,
-        applied_date: curr.applied_date
-      });
-      return acc;
-    }, {});
-
-    res.json(Object.values(applications));
-  } catch (error) {
-    console.error('Error fetching applications:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
+// Note: /api/faculty/applications route is now handled by facultyApplicationsApi
 
 // Add error handler middleware
 app.use((err, req, res, next) => {
@@ -336,6 +290,7 @@ app.use('/api/faculty', facultyChangePasswordApi);
 app.use('/api/faculty', facultyJobsApi);
 app.use('/api/faculty', facultyDashboardApi);
 app.use('/api/faculty', facultyStudentsApi);
+app.use('/api/faculty', facultyApplicationsApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

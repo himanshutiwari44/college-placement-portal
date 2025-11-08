@@ -1,92 +1,147 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE = 'http://localhost:5000/api';
 
 const Applications = () => {
-  // Minimal view: jobs with company and a list of applicant names only
   const [expanded, setExpanded] = useState({});
-  const jobsWithApplicants = [
-    { 
-      id: 'job-1',
-      title: 'Software Engineer',
-      company: 'Tech Corp',
-      applicants: [
-        { name: 'John Doe', course: 'B.Tech', branch: 'CSE', semester: '8', section: 'A', cgpa: '8.5' },
-        { name: 'Priya Singh', course: 'B.Tech', branch: 'IT', semester: '8', section: 'B', cgpa: '8.9' },
-        { name: 'Aman Kumar', course: 'B.Tech', branch: 'CSE', semester: '8', section: 'C', cgpa: '8.2' },
-        { name: 'Sara Khan', course: 'B.Tech', branch: 'ECE', semester: '8', section: 'A', cgpa: '8.7' }
-      ]
-    },
-    { 
-      id: 'job-2',
-      title: 'Data Analyst',
-      company: 'DataSoft',
-      applicants: [
-        { name: 'Sarah Johnson', course: 'B.Tech', branch: 'CSE', semester: '8', section: 'A', cgpa: '8.8' },
-        { name: 'Mike Chen', course: 'B.Tech', branch: 'IT', semester: '8', section: 'B', cgpa: '8.2' },
-        { name: 'Ravi Verma', course: 'B.Tech', branch: 'CSE', semester: '8', section: 'D', cgpa: '8.0' }
-      ]
-    },
-    { 
-      id: 'job-3',
-      title: 'DevOps Engineer',
-      company: 'CloudTech',
-      applicants: [
-        { name: 'Emily Watson', course: 'B.Tech', branch: 'CSE', semester: '8', section: 'B', cgpa: '9.1' },
-        { name: 'Ankit Sharma', course: 'B.Tech', branch: 'ECE', semester: '8', section: 'C', cgpa: '8.3' }
-      ]
-    }
-  ];
+  const [jobsWithApplicants, setJobsWithApplicants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await fetch(`${API_BASE}/faculty/applications`);
+        if (!res.ok) {
+          throw new Error('Failed to load applications');
+        }
+        const data = await res.json();
+        setJobsWithApplicants(data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch applications');
+        console.error('Error fetching applications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+
+  const toggleExpand = (jobid) => setExpanded(prev => ({ ...prev, [jobid]: !prev[jobid] }));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-600">Loading applications...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Applications</h1>
-          <p className="text-gray-600">View only applicant names for each job. No statuses or details shown.</p>
+          <p className="text-gray-600">View job roles and the list of students who have applied for each position.</p>
         </div>
 
-        <div className="space-y-4">
-          {jobsWithApplicants.map(job => (
-            <div key={job.id} className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                  <p className="text-sm text-gray-600">{job.company}</p>
-                </div>
-                <button
-                  onClick={() => toggleExpand(job.id)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                >
-                  {expanded[job.id] ? 'Hide Applications' : 'View Applications'}
-                </button>
-              </div>
-              {expanded[job.id] && (
-                <div className="px-4 pb-4">
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Applicants</h4>
-                    <div className="space-y-3">
-                      {job.applicants.map((a, idx) => (
-                        <div key={idx} className="p-3 bg-white rounded border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900">{a.name}</span>
-                            <span className="text-sm text-gray-600">CGPA: {a.cgpa}</span>
-                          </div>
-                          <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
-                            <div><span className="text-gray-500">Course:</span> {a.course}</div>
-                            <div><span className="text-gray-500">Branch:</span> {a.branch}</div>
-                            <div><span className="text-gray-500">Semester:</span> {a.semester}</div>
-                            <div><span className="text-gray-500">Section:</span> {a.section}</div>
-                          </div>
-                        </div>
-                      ))}
+        {jobsWithApplicants.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+            <p className="text-gray-600">No job applications found.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {jobsWithApplicants.map(job => (
+              <div key={job.jobid} className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{job.companyname}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{job.jobdescription}</p>
+                    <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                      <span>Location: {job.location}</span>
+                      <span>Salary: {job.salary}</span>
+                      <span>Experience: {job.expereience}</span>
+                      {job.application_count > 0 && (
+                        <span className="text-blue-600 font-medium">
+                          {job.application_count} {job.application_count === 1 ? 'application' : 'applications'}
+                        </span>
+                      )}
                     </div>
                   </div>
+                  <button
+                    onClick={() => toggleExpand(job.jobid)}
+                    className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium whitespace-nowrap"
+                  >
+                    {expanded[job.jobid] ? 'Hide' : 'View'}
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {expanded[job.jobid] && (
+                  <div className="px-4 pb-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        Students Applied ({job.applicants.length})
+                      </h4>
+                      {job.applicants.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No students have applied for this job yet.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {job.applicants.map((applicant) => (
+                            <div key={applicant.application_id} className="p-3 bg-white rounded border border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900">{applicant.name}</span>
+                                {applicant.cgpa && (
+                                  <span className="text-sm text-gray-600">CGPA: {applicant.cgpa}</span>
+                                )}
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
+                                {applicant.rollno && (
+                                  <div><span className="text-gray-500">Roll No:</span> {applicant.rollno}</div>
+                                )}
+                                {applicant.branch && (
+                                  <div><span className="text-gray-500">Branch:</span> {applicant.branch}</div>
+                                )}
+                                {applicant.semester && (
+                                  <div><span className="text-gray-500">Semester:</span> {applicant.semester}</div>
+                                )}
+                                {applicant.university && (
+                                  <div><span className="text-gray-500">University:</span> {applicant.university}</div>
+                                )}
+                              </div>
+                              {applicant.email && (
+                                <div className="mt-2 text-xs text-gray-600">
+                                  <span className="text-gray-500">Email:</span> {applicant.email}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

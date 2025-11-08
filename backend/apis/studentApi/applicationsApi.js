@@ -2,8 +2,6 @@ import express from 'express';
 
 const router = express.Router();
 
-// GET /api/student/applications?email=...&limit=...
-// Finds student by email, then returns applications joined with jobs
 router.get('/applications', async (req, res) => {
   try {
     const { email, limit } = req.query;
