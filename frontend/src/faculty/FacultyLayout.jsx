@@ -11,6 +11,7 @@ const FacultyLayout = () => {
     { id: 'jobs', name: 'Job Management', icon: '💼', path: '/faculty/jobs' },
     { id: 'students', name: 'Students', icon: '👥', path: '/faculty/students' },
     { id: 'applications', name: 'Applications', icon: '📋', path: '/faculty/applications' },
+    { id: 'notifications', name: 'Notifications', icon: '🔔', path: '/faculty/notifications' },
     // { id: 'interviews', name: 'Interviews', icon: '🎯', path: '/faculty/interviews' },
     // { id: 'company', name: 'Companies', icon: '🏢', path: '/faculty/company' },
     { id: 'reports', name: 'Reports', icon: '📈', path: '/faculty/reports' },

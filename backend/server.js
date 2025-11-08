@@ -7,12 +7,14 @@ import studentProfileApi from './apis/studentApi/profileApi.js';
 import studentChangePasswordApi from './apis/studentApi/changePasswordApi.js';
 import studentApplicationsApi from './apis/studentApi/applicationsApi.js';
 import studentJobsApi from './apis/studentApi/jobsApi.js';
+import studentNotificationsApi from './apis/studentApi/notificationsApi.js';
 import facultyProfileApi from './apis/facultyApi/profileApi.js';
 import facultyChangePasswordApi from './apis/facultyApi/changePasswordApi.js';
 import facultyJobsApi from './apis/facultyApi/jobsApi.js';
 import facultyDashboardApi from './apis/facultyApi/dashboardApi.js';
 import facultyStudentsApi from './apis/facultyApi/studentsApi.js';
 import facultyApplicationsApi from './apis/facultyApi/applicationsApi.js';
+import facultyNotificationsApi from './apis/facultyApi/notificationsApi.js';
 
 dotenv.config();
 
@@ -106,6 +108,30 @@ const connectDB = async () => {
         status VARCHAR(50) DEFAULT 'pending',
         applied_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (student_email) REFERENCES students(email)
+      )`
+    );
+
+    // Create notifications table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        notification_id SERIAL PRIMARY KEY,
+        teacher_id INTEGER NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        FOREIGN KEY (teacher_id) REFERENCES teachers(teacherid)
+      )`
+    );
+
+    // Create notification_recipients table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS notification_recipients (
+        recipient_id SERIAL PRIMARY KEY,
+        notification_id INTEGER NOT NULL,
+        student_id INTEGER NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (notification_id) REFERENCES notifications(notification_id) ON DELETE CASCADE,
+        FOREIGN KEY (student_id) REFERENCES students(studentid) ON DELETE CASCADE
       )`
     );
   } catch (error) {
@@ -285,12 +311,14 @@ app.use('/api/student', studentProfileApi);
 app.use('/api/student', studentChangePasswordApi);
 app.use('/api/student', studentApplicationsApi);
 app.use('/api/student', studentJobsApi);
+app.use('/api/student', studentNotificationsApi);
 app.use('/api/faculty', facultyProfileApi);
 app.use('/api/faculty', facultyChangePasswordApi);
 app.use('/api/faculty', facultyJobsApi);
 app.use('/api/faculty', facultyDashboardApi);
 app.use('/api/faculty', facultyStudentsApi);
 app.use('/api/faculty', facultyApplicationsApi);
+app.use('/api/faculty', facultyNotificationsApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

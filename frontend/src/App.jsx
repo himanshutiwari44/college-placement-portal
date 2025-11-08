@@ -23,6 +23,7 @@ import FacultyInterviews from './faculty/Interviews';
 import Company from './faculty/Company';
 import Reports from './faculty/Reports';
 import FacultySettings from './faculty/Settings';
+import FacultyNotifications from './faculty/Notifications';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
             <Route path="jobs" element={<JobManagement />} />
             <Route path="students" element={<FacultyStudents />} />
             <Route path="applications" element={<FacultyApplications />} />
+            <Route path="notifications" element={<FacultyNotifications />} />
             <Route path="interviews" element={<FacultyInterviews />} />
             <Route path="company" element={<Company />} />
             <Route path="reports" element={<Reports />} />
