@@ -15,6 +15,7 @@ import facultyDashboardApi from './apis/facultyApi/dashboardApi.js';
 import facultyStudentsApi from './apis/facultyApi/studentsApi.js';
 import facultyApplicationsApi from './apis/facultyApi/applicationsApi.js';
 import facultyNotificationsApi from './apis/facultyApi/notificationsApi.js';
+import facultyReportsApi from './apis/facultyApi/reportsApi.js';
 
 dotenv.config();
 
@@ -319,6 +320,7 @@ app.use('/api/faculty', facultyDashboardApi);
 app.use('/api/faculty', facultyStudentsApi);
 app.use('/api/faculty', facultyApplicationsApi);
 app.use('/api/faculty', facultyNotificationsApi);
+app.use('/api/faculty', facultyReportsApi);
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

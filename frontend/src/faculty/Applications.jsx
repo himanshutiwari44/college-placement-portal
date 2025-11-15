@@ -104,35 +104,53 @@ const Applications = () => {
                         <p className="text-gray-500 text-sm">No students have applied for this job yet.</p>
                       ) : (
                         <div className="space-y-3">
-                          {job.applicants.map((applicant) => (
-                            <div key={applicant.application_id} className="p-3 bg-white rounded border border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900">{applicant.name}</span>
-                                {applicant.cgpa && (
-                                  <span className="text-sm text-gray-600">CGPA: {applicant.cgpa}</span>
-                                )}
-                              </div>
-                              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
-                                {applicant.rollno && (
-                                  <div><span className="text-gray-500">Roll No:</span> {applicant.rollno}</div>
-                                )}
-                                {applicant.branch && (
-                                  <div><span className="text-gray-500">Branch:</span> {applicant.branch}</div>
-                                )}
-                                {applicant.semester && (
-                                  <div><span className="text-gray-500">Semester:</span> {applicant.semester}</div>
-                                )}
-                                {applicant.university && (
-                                  <div><span className="text-gray-500">University:</span> {applicant.university}</div>
-                                )}
-                              </div>
-                              {applicant.email && (
-                                <div className="mt-2 text-xs text-gray-600">
-                                  <span className="text-gray-500">Email:</span> {applicant.email}
+                          {job.applicants.map((applicant) => {
+                            const getStatusColor = (status) => {
+                              const statusLower = (status || '').toLowerCase();
+                              if (statusLower === 'placed') return 'bg-green-100 text-green-800 border-green-200';
+                              if (statusLower === 'offer received') return 'bg-blue-100 text-blue-800 border-blue-200';
+                              if (statusLower === 'interview scheduled') return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                              if (statusLower === 'rejected') return 'bg-red-100 text-red-800 border-red-200';
+                              return 'bg-gray-100 text-gray-800 border-gray-200';
+                            };
+
+                            return (
+                              <div key={applicant.application_id} className="p-3 bg-white rounded border border-gray-200">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-gray-900">{applicant.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    {applicant.cgpa && (
+                                      <span className="text-sm text-gray-600">CGPA: {applicant.cgpa}</span>
+                                    )}
+                                    {applicant.status && (
+                                      <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(applicant.status)}`}>
+                                        {applicant.status}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
+                                  {applicant.rollno && (
+                                    <div><span className="text-gray-500">Roll No:</span> {applicant.rollno}</div>
+                                  )}
+                                  {applicant.branch && (
+                                    <div><span className="text-gray-500">Branch:</span> {applicant.branch}</div>
+                                  )}
+                                  {applicant.semester && (
+                                    <div><span className="text-gray-500">Semester:</span> {applicant.semester}</div>
+                                  )}
+                                  {applicant.university && (
+                                    <div><span className="text-gray-500">University:</span> {applicant.university}</div>
+                                  )}
+                                </div>
+                                {applicant.email && (
+                                  <div className="mt-2 text-xs text-gray-600">
+                                    <span className="text-gray-500">Email:</span> {applicant.email}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

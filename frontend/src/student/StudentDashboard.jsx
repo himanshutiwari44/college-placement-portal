@@ -80,26 +80,7 @@ const StudentDashboard = () => {
     { title: 'Rejected', value: String(rejectedCount), color: 'bg-red-400' }
   ];
 
-  const upcomingEvents = [
-    {
-      title: 'Interview with Tech Corp',
-      date: '2024-01-20',
-      time: '10:00 AM',
-      type: 'Technical Interview'
-    },
-    {
-      title: 'HR Round - DataSoft',
-      date: '2024-01-22',
-      time: '2:00 PM',
-      type: 'HR Interview'
-    },
-    {
-      title: 'Coding Test - CloudTech',
-      date: '2024-01-25',
-      time: '11:00 AM',
-      type: 'Online Assessment'
-    }
-  ];
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -127,7 +108,7 @@ const StudentDashboard = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1  gap-8">
           {/* Recent Applications */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
@@ -176,36 +157,7 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Upcoming Events */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {upcomingEvents.map((event, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                      <p className="text-sm text-gray-600">{event.type}</p>
-                      <p className="text-sm text-gray-500">{event.date} at {event.time}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        Upcoming
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button 
-                onClick={() => navigate('/student/events')}
-                className="w-full mt-4 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                View All Events
-              </button>
-            </div>
-          </div>
+       
         </div>
 
        

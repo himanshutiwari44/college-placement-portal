@@ -1,100 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE = 'http://localhost:5000/api';
 
 const Reports = () => {
   const [selectedReport, setSelectedReport] = useState('overview');
-  const [dateRange, setDateRange] = useState('3months');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Report data states
+  const [overviewData, setOverviewData] = useState(null);
+  const [branchData, setBranchData] = useState([]);
+  const [companyData, setCompanyData] = useState([]);
+  const [studentData, setStudentData] = useState([]);
+  const [statusBreakdown, setStatusBreakdown] = useState([]);
 
   const reportTypes = [
     { id: 'overview', name: 'Overview Report', description: 'Overall placement statistics and trends' },
     { id: 'companies', name: 'Company Performance', description: 'Job posting and hiring trends by company' },
     { id: 'students', name: 'Student Performance', description: 'Individual student placement progress' },
     { id: 'branches', name: 'Branch-wise Analysis', description: 'Placement statistics by academic branch' },
-    { id: 'skill-demand', name: 'Skill Demand Analysis', description: 'Most demanded skills and technologies' }
-   
+    { id: 'status', name: 'Status Breakdown', description: 'Application status distribution' },
   ];
 
-  const dateRanges = [
-    { value: '1month', label: 'Last Month' },
-    { value: '3months', label: 'Last 3 Months' },
-    { value: '6months', label: 'Last 6 Months' },
-    { value: '1year', label: 'Last Year' },
-    { value: 'custom', label: 'Custom Range' }
-  ];
-
-  const overviewData = {
-    totalStudents: 245,
-    placedStudents: 89,
-    placementPercentage: 36.3,
-    totalApplications: 1245,
-    totalInterviews: 367,
-    totalCompanies: 28,
-    activeJobs: 45
-  };
-
-  const branchData = [
-    { branch: 'Computer Science', students: 95, placed: 42, percentage: 44.2 },
-    { branch: 'Information Technology', students: 78, placed: 28, percentage: 35.9 },
-    { branch: 'Electronics & Communication', students: 45, placed: 12, percentage: 26.7 },
-    { branch: 'Mechanical Engineering', students: 27, placed: 7, percentage: 25.9 }
-  ];
-
-  const topCompanies = [
-    { 
-      company: 'Tech Corp', 
-      jobsPosted: 12, 
-      applications: 245, 
-      interviews: 67, 
-      placements: 15, 
-      rating: 4.8,
-      conversion: 22.4
-    },
-    { 
-      company: 'AI Innovations', 
-      jobsPosted: 15, 
-      applications: 289, 
-      interviews: 89, 
-      placements: 23, 
-      rating: 4.9,
-      conversion: 25.8
-    },
-    { 
-      company: 'DataSoft Solutions', 
-      jobsPosted: 8, 
-      applications: 156, 
-      interviews: 45, 
-      placements: 18, 
-      rating: 4.6,
-      conversion: 40.0
-    },
-    { 
-      company: 'CloudTech Innovations', 
-      jobsPosted: 6, 
-      applications: 134, 
-      interviews: 38, 
-      placements: 12, 
-      rating: 4.7,
-      conversion: 31.6
+  // Fetch overview data
+  const fetchOverview = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/faculty/reports/overview`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to load overview data' }));
+        throw new Error(errorData.message || `HTTP ${res.status}: Failed to load overview data`);
+      }
+      const data = await res.json();
+      setOverviewData(data);
+    } catch (err) {
+      console.error('Error fetching overview:', err);
+      setError(err.message || 'Failed to load overview data');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const skillDemands = [
-    { skill: 'JavaScript', demand: 85, applications: 234 },
-    { skill: 'Python', demand: 78, applications: 198 },
-    { skill: 'React.js', demand: 72, applications: 186 },
-    { skill: 'Node.js', demand: 68, applications: 145 },
-    { skill: 'SQL', demand: 65, applications: 167 },
-    { skill: 'Machine Learning', demand: 58, applications: 123 },
-    { skill: 'AWS/Cloud', demand: 55, applications: 98 },
-    { skill: 'Docker', demand: 52, applications: 87 }
-  ];
-
-  const generateReport = () => {
-    console.log(`Generating ${selectedReport} report for ${dateRange} period`);
   };
 
-  const downloadReport = (format) => {
-    console.log(`Downloading ${selectedReport} report as ${format}`);
+  // Fetch branch data
+  const fetchBranches = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/faculty/reports/branches`);
+      if (!res.ok) throw new Error('Failed to load branch data');
+      const data = await res.json();
+      setBranchData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Fetch company data
+  const fetchCompanies = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/faculty/reports/companies`);
+      if (!res.ok) throw new Error('Failed to load company data');
+      const data = await res.json();
+      setCompanyData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch student data
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/faculty/reports/students`);
+      if (!res.ok) throw new Error('Failed to load student data');
+      const data = await res.json();
+      setStudentData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch status breakdown
+  const fetchStatusBreakdown = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/faculty/reports/status-breakdown`);
+      if (!res.ok) throw new Error('Failed to load status breakdown');
+      const data = await res.json();
+      setStatusBreakdown(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data when report type or date range changes
+  useEffect(() => {
+    const loadData = async () => {
+      switch (selectedReport) {
+        case 'overview':
+          await fetchOverview();
+          break;
+        case 'branches':
+          await fetchBranches();
+          break;
+        case 'companies':
+          await fetchCompanies();
+          break;
+        case 'students':
+          await fetchStudents();
+          break;
+        case 'status':
+          await fetchStatusBreakdown();
+          break;
+        default:
+          break;
+      }
+    };
+    loadData();
+  }, [selectedReport]);
 
   const getProgressColor = (percentage) => {
     if (percentage >= 40) return 'bg-green-500';
@@ -103,30 +139,38 @@ const Reports = () => {
     return 'bg-red-500';
   };
 
+  const getStatusColor = (status) => {
+    const statusLower = (status || '').toLowerCase();
+    if (statusLower === 'placed') return 'bg-green-100 text-green-800';
+    if (statusLower === 'offer received') return 'bg-blue-100 text-blue-800';
+    if (statusLower === 'interview scheduled') return 'bg-yellow-100 text-yellow-800';
+    if (statusLower === 'rejected') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const formatStatus = (status) => {
+    return (status || 'applied').split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
-              
-            </div>
-            <div className="flex space-x-4">
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                {dateRanges.map(range => (
-                  <option key={range.value} value={range.value}>{range.label}</option>
-                ))}
-              </select>
-             
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
+            {/* <p className="text-gray-600">Comprehensive placement statistics and insights</p> */}
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Report Selection */}
         <div className="mb-8">
@@ -138,7 +182,7 @@ const Reports = () => {
                 onClick={() => setSelectedReport(report.id)}
                 className={`p-4 rounded-lg border text-left transition-colors ${
                   selectedReport === report.id
-                    ? '!border-green-500 !bg-green-50 !text-green-900'
+                    ? '!border-blue-500 !bg-blue-50 !text-blue-900'
                     : '!border-gray-200 !bg-white hover:!border-gray-300 !text-gray-900'
                 }`}
               >
@@ -149,8 +193,15 @@ const Reports = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-600">Loading report data...</div>
+          </div>
+        )}
+
         {/* Overview Report */}
-        {selectedReport === 'overview' && (
+        {!loading && selectedReport === 'overview' && overviewData && (
           <div className="space-y-8">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -201,121 +252,91 @@ const Reports = () => {
               </div>
             </div>
 
-            {/* Branch-wise Performance */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Branch-wise Placement Performance</h3>
-                <button
-                  onClick={() => downloadReport('Excel')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Export
-                </button>
-              </div>
-              <div className="space-y-4">
-                {branchData.map((branch, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">{branch.branch}</span>
-                        <span className="text-sm text-gray-600">
-                          {branch.placed}/{branch.students} placed ({branch.percentage}%)
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${getProgressColor(branch.percentage)}`}
-                          style={{ width: `${branch.percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-xl">🏢</span>
                   </div>
-                ))}
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active Companies</p>
+                    <p className="text-2xl font-bold text-gray-900">{overviewData.totalCompanies}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-xl">💼</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+                    <p className="text-2xl font-bold text-gray-900">{overviewData.activeJobs}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Branch-wise Report */}
-        {selectedReport === 'branches' && (
+        {!loading && selectedReport === 'branches' && branchData.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Detailed Branch Analysis</h3>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => downloadReport('PDF')}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  PDF
-                </button>
-                <button
-                  onClick={() => downloadReport('Excel')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Excel
-                </button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Branch-wise Placement Performance</h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Students</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placement %</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Salary</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Top Skills</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {branchData.map((branch, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{branch.branch}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{branch.students}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{branch.placed}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          branch.percentage >= 40 ? 'bg-green-100 text-green-800' :
-                          branch.percentage >= 30 ? 'bg-blue-100 text-blue-800' :
-                          branch.percentage >= 20 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {branch.percentage}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8.5 LPA</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">JavaScript, Python, React</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {branchData.map((branch, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">{branch.branch}</span>
+                      <span className="text-sm text-gray-600">
+                        {branch.placed}/{branch.students} placed ({branch.percentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${getProgressColor(branch.percentage)}`}
+                        style={{ width: `${Math.min(branch.percentage, 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="mt-2 flex gap-4 text-xs text-gray-600">
+                      <span>Applications: {branch.applications}</span>
+                      <span>Interviews: {branch.interviews}</span>
+                      {branch.avgCgpa > 0 && <span>Avg CGPA: {branch.avgCgpa.toFixed(2)}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Companies Report */}
-        {selectedReport === 'companies' && (
+        {!loading && selectedReport === 'companies' && companyData.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Company Performance Analysis</h3>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Export Report
-              </button>
             </div>
             <div className="space-y-4">
-              {topCompanies.map((company, index) => (
+              {companyData.map((company, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-gray-900">{company.company}</h4>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">{company.rating}/5 ⭐</span>
-                      <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        company.conversion >= 30 ? 'bg-green-100 text-green-800' :
+                        company.conversion >= 20 ? 'bg-blue-100 text-blue-800' :
+                        company.conversion >= 10 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
                         {company.conversion}% conversion
                       </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                     <div>
                       <span className="block text-gray-600">Jobs Posted</span>
                       <span className="text-lg font-semibold">{company.jobsPosted}</span>
@@ -329,8 +350,12 @@ const Reports = () => {
                       <span className="text-lg font-semibold">{company.interviews}</span>
                     </div>
                     <div>
+                      <span className="block text-gray-600">Offers</span>
+                      <span className="text-lg font-semibold">{company.offersReceived}</span>
+                    </div>
+                    <div>
                       <span className="block text-gray-600">Placements</span>
-                      <span className="text-lg font-semibold">{company.placements}</span>
+                      <span className="text-lg font-semibold text-green-600">{company.placements}</span>
                     </div>
                   </div>
                 </div>
@@ -339,67 +364,118 @@ const Reports = () => {
           </div>
         )}
 
-        {/* Skill Demand Report */}
-        {selectedReport === 'skill-demand' && (
+        {/* Students Report */}
+        {!loading && selectedReport === 'students' && studentData.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Most Demanded Skills</h3>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                Export Skills Report
-              </button>
+              <h3 className="text-lg font-semibold text-gray-900">Student Performance Report</h3>
+              {/* <span className="text-sm text-gray-600">Showing {studentData.length} students</span> */}
             </div>
-            <div className="space-y-3">
-              {skillDemands.map((skill, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-gray-900">{skill.skill}</span>
-                      <span className="text-sm text-gray-600">{skill.demand}% demand</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full"
-                        style={{ width: `${skill.demand}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{skill.applications} applications requiring this skill</p>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll No</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CGPA</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applications</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interviews</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Offers</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placements</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {studentData.map((student) => (
+                    <tr key={student.studentid}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.rollno || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.branch || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {student.cgpa ? student.cgpa.toFixed(2) : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.applications}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.interviews}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">{student.offers}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          student.placements > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {student.placements}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* Download Options */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Download Report</h3>
-          <div className="flex space-x-4">
-            <button
-              onClick={() => downloadReport('PDF')}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
-            >
-              📄 Download PDF
-            </button>
-            <button
-              onClick={() => downloadReport('Excel')}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
-            >
-              📊 Download Excel
-            </button>
-            <button
-              onClick={() => downloadReport('PowerPoint')}
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
-            >
-              💻 Download PowerPoint
-            </button>
+        {/* Status Breakdown Report */}
+        {!loading && selectedReport === 'status' && statusBreakdown.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Application Status Breakdown</h3>
+            </div>
+            <div className="space-y-4">
+              {statusBreakdown.map((item, index) => {
+                const total = statusBreakdown.reduce((sum, s) => sum + s.count, 0);
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
+                return (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(item.status)}`}>
+                          {formatStatus(item.status)}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {item.count} applications ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${getProgressColor(parseFloat(percentage))}`}
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Reports are generated for the selected date range and will be emailed to your registered email address.
-          </p>
-        </div>
+        )}
+
+        {/* Empty States */}
+        {!loading && (
+          <>
+            {selectedReport === 'branches' && branchData.length === 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+                <p className="text-gray-600">No branch data available.</p>
+              </div>
+            )}
+            {selectedReport === 'companies' && companyData.length === 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+                <p className="text-gray-600">No company data available.</p>
+              </div>
+            )}
+            {selectedReport === 'students' && studentData.length === 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+                <p className="text-gray-600">No student data available.</p>
+              </div>
+            )}
+            {selectedReport === 'status' && statusBreakdown.length === 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+                <p className="text-gray-600">No status data available.</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 export default Reports;
+

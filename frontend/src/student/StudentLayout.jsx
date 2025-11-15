@@ -10,7 +10,7 @@ const StudentLayout = () => {
     { id: 'dashboard', name: 'Dashboard', icon: '🏠', path: '/student/dashboard' },
     { id: 'jobs', name: 'Jobs', icon: '💼', path: '/student/jobs' },
     { id: 'applications', name: 'Applications', icon: '📋', path: '/student/applications' },
-    { id: 'events', name: 'Events', icon: '📅', path: '/student/events' },
+    // { id: 'events', name: 'Events', icon: '📅', path: '/student/events' },
     // { id: 'interviews', name: 'Interviews', icon: '🎯', path: '/student/interviews' },
     { id: 'notifications', name: 'Notifications', icon: '🔔', path: '/student/notifications' },
     // { id: 'resources', name: 'Resources', icon: '📚', path: '/student/resources' },
@@ -71,11 +71,7 @@ const StudentLayout = () => {
                   >
                     <span className="mr-2 text-lg">{item.icon}</span>
                     {item.name}
-                    {item.id === 'notifications' && unreadCount > 0 && (
-                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                        {unreadCount}
-                      </span>
-                    )}
+                   
                   </button>
                 ))}
           
