@@ -9,7 +9,7 @@ const Students = () => {
   const [cards, setCards] = useState({ totalStudents: 0, placedStudents: 0, averageCgpa: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const API_BASE = 'http://localhost:5000/api/faculty';
+  const API_BASE = 'https://college-placement-portal-iick.onrender.com/api/faculty';
 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'details' | 'applications'

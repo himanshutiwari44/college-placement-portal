@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 const FacultyDashboard = () => {
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = 'https://college-placement-portal-iick.onrender.com/api';
   const [cards, setCards] = useState(null);
   const [recentApplications, setRecentApplications] = useState([]);
   const [loading, setLoading] = useState(false);

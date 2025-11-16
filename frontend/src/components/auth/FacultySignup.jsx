@@ -40,7 +40,7 @@ const FacultySignup = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/faculty/signup', {
+      const response = await fetch('https://college-placement-portal-iick.onrender.com/api/auth/faculty/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

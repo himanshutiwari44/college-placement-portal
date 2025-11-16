@@ -7,7 +7,7 @@ const Applications = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'https://college-placement-portal-iick.onrender.com';
 
   const statusOptions = [
     'applied',

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://college-placement-portal-iick.onrender.com/api';
 
 const Settings = () => {
     const navigate = useNavigate();

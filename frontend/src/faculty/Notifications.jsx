@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../components/auth/AuthContext';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://college-placement-portal-iick.onrender.com/api';
 
 const Notifications = () => {
   const { user } = useAuth();
